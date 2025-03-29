@@ -1,20 +1,21 @@
+import random
 from django.db import transaction, IntegrityError
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from django.contrib.auth.hashers import make_password, check_password
 from rest_framework.decorators import api_view
-from rest_framework.response import Response
 from rest_framework import status
-from raininfotech.helper import create_token
+from raininfotech.helper import create_token, email_validation
 from .serializers import UserSerializer
 import traceback
 from django.core.cache import cache
-from users.models import Users
+from users.models import Users, UserTokenLog
 from users.utils import (
     data_sanitization,
     phone_no_validation,
     send_otp_for_two_fa_verification,
+    blacklist_token,
 )
 
 
@@ -91,6 +92,7 @@ def register_user(request):
 
 
 @api_view(["POST"])
+@permission_classes([AllowAny])
 def user_login(request):
     req_data = request.data
 
@@ -180,6 +182,7 @@ def user_login(request):
 
 
 @api_view(["POST"])
+@permission_classes([AllowAny])
 def verify_otp_login(request):
     req_data = request.data
     telephone = req_data.get("telephone")
@@ -242,3 +245,120 @@ def verify_user_status(user):
 @permission_classes([IsAuthenticated])
 def dashboard(request):
     return Response({"message": f"Welcome {request.user.firstname}!"})
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def logout_user(request):
+    user = request.user
+    auth_header = request.headers.get("Authorization")
+
+    if not auth_header:
+        return Response(
+            {"error": "Authorization token missing"}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+    try:
+        prefix, token = auth_header.split(" ")
+        if prefix.lower() != "bearer":
+            return Response(
+                {"error": "Invalid token prefix"}, status=status.HTTP_400_BAD_REQUEST
+            )
+    except ValueError:
+        return Response(
+            {"error": "Invalid Authorization header format"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    # Find and block the token in DB
+    token_log = UserTokenLog.objects.filter(user_id=user.id, user_token=token).first()
+
+    if token_log:
+        token_log.is_block = True
+        token_log.save()
+    else:
+        # Optionally log it if not found
+        UserTokenLog.objects.create(user=user, user_token=token, is_block=True)
+
+    # Add token to Redis blacklist
+    blacklist_token(token)
+
+    return Response({"message": "Successfully logged out."}, status=status.HTTP_200_OK)
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def password_reset_request(request):
+    identifier = request.data.get("email") or request.data.get("telephone")
+
+    if not identifier:
+        return Response({"error": "Email or telephone is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Lookup user by email or phone
+    try:
+        if "@" in identifier:
+            user = Users.objects.filter(email=identifier).first()
+        else:
+            user = Users.objects.filter(telephone=identifier).first()
+    except Exception:
+        user = None
+
+    if not user:
+        return Response({"error": "No user found with this information."}, status=status.HTTP_404_NOT_FOUND)
+
+    if user.is_block:
+        return Response({"error": "User account is blocked."}, status=status.HTTP_403_FORBIDDEN)
+
+    # Generate OTP
+    otp = random.randint(100000, 999999)
+
+    # Save to cache
+    cache.set(f"password_reset:{identifier}", {
+        "otp": str(otp),
+        "user_id": user.id,
+    }, timeout=300)  # 5 min
+
+    # Optional: send via SMS or email
+    send_otp_for_two_fa_verification(identifier, msg="reset password", platform="web")
+
+    return Response({
+        "message": "OTP sent successfully for password reset",
+        "otp": otp  # NOTE: Return only in dev — hide in prod
+    }, status=status.HTTP_200_OK)
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def reset_password(request):
+    identifier = request.data.get("email") or request.data.get("telephone")
+    otp = request.data.get("otp")
+    new_password = request.data.get("new_password")
+
+    if not (identifier and otp and new_password):
+        return Response(
+            {"error": "All fields are required."}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+    data = cache.get(f"password_reset:{identifier}")
+    if not data:
+        return Response(
+            {"error": "OTP expired or invalid."}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+    if str(data.get("otp")) != str(otp):
+        return Response({"error": "Invalid OTP."}, status=status.HTTP_401_UNAUTHORIZED)
+
+    try:
+        user = Users.objects.get(id=data.get("user_id"))
+        user.password = make_password(new_password)
+        user.save()
+
+        # Remove OTP from cache after use
+        cache.delete(f"password_reset:{identifier}")
+
+        return Response(
+            {"message": "Password updated successfully."}, status=status.HTTP_200_OK
+        )
+
+    except Users.DoesNotExist:
+        return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)

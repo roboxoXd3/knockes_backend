@@ -86,3 +86,15 @@ LOGGING = {
         },
     },
 }
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.filebased.FileBasedCache",
+        "LOCATION": os.path.join("/full/path/to/raininfotech/", "django_cache"),
+    }
+}
+
+
+REDIS_BLACKLIST_EXPIRY_SECONDS = int(
+    ENV.get("REDIS_BLACKLIST_EXPIRY_SECONDS", 60 * 60 * 24 * 7)
+)  # 7 days

@@ -1,7 +1,15 @@
+import re
 import jwt
 from datetime import datetime, timedelta, timezone
 from raininfotech import settings
 from users.models import UserTokenLog
+
+
+def email_validation(email):
+    regex = "^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$"
+    if re.search(regex, email):
+        return True
+    return False
 
 
 def create_token(user):
