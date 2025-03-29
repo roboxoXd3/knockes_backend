@@ -4,18 +4,24 @@ from dotenv import find_dotenv, load_dotenv
 dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
 load_dotenv(find_dotenv(), override=True)
 
+ENV = os.environ
+
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = ENV.get("SECRET_KEY")
+
+ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "localhost").split(",")
+
+# Application definition
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
-    "django.contrib.contenttypes",  # Add this line
+    "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
-    "rest_framework_simplejwt",
-    "users",  # Your Django app
+    "users",
 ]
-
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -27,23 +33,18 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-
-ENV = os.environ
-
-ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "localhost").split(",")
-
+ROOT_URLCONF = "raininfotech.urls"
 
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
-        "NAME": ENV.get("NAME"),  # Your DB name
-        "USER": ENV.get("USER"),  # Your MySQL username
-        "PASSWORD": ENV.get("PASSWORD"),  # Your MySQL root password
+        "NAME": ENV.get("NAME"),
+        "USER": ENV.get("USER"),
+        "PASSWORD": ENV.get("PASSWORD"),
         "HOST": ENV.get("HOST"),
         "PORT": ENV.get("PORT"),
     }
 }
-
 
 TEMPLATES = [
     {
@@ -61,12 +62,27 @@ TEMPLATES = [
     },
 ]
 
-ROOT_URLCONF = "raininfotech.urls"  # Adding ROOT_URLCONF setting
-
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
-    ),
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "users.middleware.jwt_auth.JWTAuthentication",  # 👈 Your custom auth class
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
 }
 
-SECRET_KEY = ENV.get("SECRET_KEY")
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        },
+    },
+    "loggers": {
+        "django.request": {
+            "handlers": ["console"],
+            "level": "DEBUG",
+        },
+    },
+}

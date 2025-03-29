@@ -1,14 +1,14 @@
 import jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from raininfotech import settings
 from users.models import UserTokenLog
 
 
-def create_token512(user):
+def create_token(user):
     payload = {
         "sub": str(user.id),
-        "iat": datetime.now(),
-        "exp": datetime.now() + timedelta(days=7),
+        "iat": datetime.now(timezone.utc),
+        "exp": datetime.now(timezone.utc) + timedelta(days=7),
     }
 
     decodedJwt = "2f." + encodeJwt(payload)
@@ -35,3 +35,20 @@ def user_token_log(user_id, token, is_block=0):
         user_log.save()
     except Exception as e:
         print(f"Error logging token: {e}")
+
+
+def decodeJwt(encoded, verify=True):
+    encoded = encoded[3:]  # remove "2f." prefix
+    try:
+        return jwt.decode(
+            encoded,
+            settings.SECRET_KEY,
+            algorithms=["HS512"],
+            options={"verify_aud": False, "require_sub": True},
+        )
+    except jwt.ExpiredSignatureError:
+        print("⚠️ Token expired")
+        return None
+    except jwt.InvalidTokenError as e:
+        print(f"❌ Invalid token: {e}")
+        return None

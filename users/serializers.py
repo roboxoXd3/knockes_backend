@@ -15,7 +15,6 @@ class UserSerializer(serializers.ModelSerializer):
             "birthdate",
             "gender",
             "is_block",
-            "user_type",
             "created_at",
             "updated_at",
         ]

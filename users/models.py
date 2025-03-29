@@ -24,6 +24,10 @@ class Users(models.Model):
     def __str__(self):
         return self.firstname + " " + self.lastname
 
+    @property
+    def is_authenticated(self):
+        return True
+
 
 class UserTokenLog(models.Model):
     id = models.BigAutoField(primary_key=True)
