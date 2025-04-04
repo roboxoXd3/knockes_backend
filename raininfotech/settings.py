@@ -1,8 +1,18 @@
 import os
 from dotenv import find_dotenv, load_dotenv
+from pathlib import Path
+
 
 dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
 load_dotenv(find_dotenv(), override=True)
+BASE_DIR = Path(__file__).resolve().parent.parent
+PROJECT_PATH = Path(__file__).resolve().parent
+
+MEDIA_URL = "/media/"
+MEDIA_ROOT = PROJECT_PATH / "media"
+
+STATIC_URL = "/static/"
+STATIC_ROOT = PROJECT_PATH / "staticfiles"
 
 ENV = os.environ
 
@@ -21,6 +31,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "users",
+    "properties",
 ]
 
 MIDDLEWARE = [
@@ -90,7 +101,7 @@ LOGGING = {
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.filebased.FileBasedCache",
-        "LOCATION": os.path.join("/full/path/to/raininfotech/", "django_cache"),
+        "LOCATION": BASE_DIR / "django_cache",  # ✅ absolute path
     }
 }
 
