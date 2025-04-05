@@ -6,8 +6,16 @@ from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("api/v1/", include("users.urls")),  # Include your users app URLs
-    path("api/v1/", include("properties.urls")),
+    path(
+        "api/v1/",
+        include(
+            [
+                path("", include("users.urls")),
+                path("", include("properties.urls")),
+                path("search/", include("search.urls")),
+            ]
+        ),
+    ),
 ]
 
 

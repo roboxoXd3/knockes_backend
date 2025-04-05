@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "users",
     "properties",
+    "search",
 ]
 
 MIDDLEWARE = [
