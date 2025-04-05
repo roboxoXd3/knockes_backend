@@ -5,6 +5,7 @@ from pathlib import Path
 
 dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
 load_dotenv(find_dotenv(), override=True)
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 PROJECT_PATH = Path(__file__).resolve().parent
 
@@ -75,7 +76,7 @@ TEMPLATES = [
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "users.middleware.jwt_auth.JWTAuthentication",  # 👈 Your custom auth class
+        "users.middleware.jwt_auth.JWTAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
@@ -109,3 +110,6 @@ CACHES = {
 REDIS_BLACKLIST_EXPIRY_SECONDS = int(
     ENV.get("REDIS_BLACKLIST_EXPIRY_SECONDS", 60 * 60 * 24 * 7)
 )  # 7 days
+
+TIME_ZONE = "Asia/Kolkata"
+JWT_EXPIRY_DAY = int(ENV.get("JWT_EXPIRY_DAY", 20))

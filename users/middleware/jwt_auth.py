@@ -1,4 +1,3 @@
-import jwt
 from rest_framework import authentication, exceptions
 from users.models import Users
 from raininfotech.helper import decodeJwt
@@ -19,17 +18,19 @@ class JWTAuthentication(authentication.BaseAuthentication):
         except ValueError:
             raise exceptions.AuthenticationFailed("Invalid Authorization header format")
 
-        # ✅ Check if token is blacklisted
+        # ✅ Check blacklist
         if is_token_blacklisted(token):
             raise exceptions.AuthenticationFailed("Token has been blacklisted")
 
-        # ✅ Decode JWT
+        # ✅ Decode JWT with proper fallback
+        payload = None
         try:
             payload = decodeJwt(token)
-        except jwt.ExpiredSignatureError:
-            raise exceptions.AuthenticationFailed("Token has expired")
-        except jwt.InvalidTokenError:
-            raise exceptions.AuthenticationFailed("Invalid token")
+        except Exception:
+            raise exceptions.AuthenticationFailed("Invalid or expired token")
+
+        if not payload or not payload.get("sub"):
+            raise exceptions.AuthenticationFailed("Invalid or expired token")
 
         # ✅ Get user
         try:

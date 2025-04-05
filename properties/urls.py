@@ -7,17 +7,7 @@ from .views import (
 
 urlpatterns = [
     path("properties/", PropertyListCreateView.as_view(), name="property-list"),
-    path(
-        "properties/create/", PropertyListCreateView.as_view(), name="property-create"
-    ),
-    path(
-        "properties/<int:id>/",
-        PropertyRetrieveUpdateView.as_view(),
-        name="property-detail",
-    ),
-    path(
-        "properties/<int:id>/delete/",
-        PropertyDeleteView.as_view(),
-        name="property-delete",
-    ),
+    path("properties/create/", PropertyListCreateView.as_view(), name="property-create"),
+    path("properties/<int:id>/", PropertyRetrieveUpdateView.as_view(), name="property-detail",),
+    path("properties/<int:id>/delete/", PropertyDeleteView.as_view(), name="property-delete",),
 ]

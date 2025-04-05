@@ -1,9 +1,8 @@
-# views.py
-
 from rest_framework import generics, filters
 from properties.permissions import ReadOnlyOrAuthenticated
 from .models import Property
 from .serializers import PropertySerializer
+
 
 class PropertyListCreateView(generics.ListCreateAPIView):
     queryset = Property.objects.all().prefetch_related("images", "amenities")
@@ -16,7 +15,7 @@ class PropertyListCreateView(generics.ListCreateAPIView):
 class PropertyRetrieveUpdateView(generics.RetrieveUpdateAPIView):
     queryset = Property.objects.all()
     serializer_class = PropertySerializer
-    permission_classes = [ReadOnlyOrAuthenticated]  # 👈 Here!
+    permission_classes = [ReadOnlyOrAuthenticated]
     lookup_field = "id"
 
 

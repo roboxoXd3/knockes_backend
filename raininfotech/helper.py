@@ -1,5 +1,6 @@
 import re
 import jwt
+from django.core.cache import cache
 from datetime import datetime, timedelta, timezone
 from raininfotech import settings
 from users.models import UserTokenLog
@@ -16,7 +17,7 @@ def create_token(user):
     payload = {
         "sub": str(user.id),
         "iat": datetime.now(timezone.utc),
-        "exp": datetime.now(timezone.utc) + timedelta(days=7),
+        "exp": datetime.now(timezone.utc) + timedelta(days=settings.JWT_EXPIRY_DAY),
     }
 
     decodedJwt = "2f." + encodeJwt(payload)
@@ -60,3 +61,7 @@ def decodeJwt(encoded, verify=True):
     except jwt.InvalidTokenError as e:
         print(f"❌ Invalid token: {e}")
         return None
+
+
+def cache_set(key, value, expiry=300):
+    cache.set(key, value, timeout=expiry)
