@@ -1,6 +1,16 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import register_user, user_login, verify_otp_login, health_check, logout_user, password_reset_request, reset_password, dashboard
+from .views import (
+    register_user,
+    user_login,
+    verify_otp_login,
+    health_check,
+    logout_user,
+    password_reset_request,
+    reset_password,
+    dashboard,
+    UserProfileView,
+)
 
 router = DefaultRouter()
 
@@ -14,4 +24,4 @@ urlpatterns = [
     path("auth/logout/", logout_user, name="logout"),
     path("auth/password-reset/", password_reset_request, name="password_reset_request"),
     path("auth/reset-password/", reset_password, name="reset_password"),
-]
+    path("users/profile/", UserProfileView.as_view(), name="user-profile"),]

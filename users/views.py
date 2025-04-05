@@ -4,10 +4,9 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from django.contrib.auth.hashers import make_password, check_password
-from rest_framework.decorators import api_view
-from rest_framework import status
+from rest_framework import status, generics, permissions
 from raininfotech.helper import create_token, email_validation
-from .serializers import UserSerializer
+from .serializers import UserSerializer, UserProfileSerializer
 import traceback
 from django.core.cache import cache
 from users.models import Users, UserTokenLog
@@ -362,3 +361,11 @@ def reset_password(request):
 
     except Users.DoesNotExist:
         return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+
+
+class UserProfileView(generics.RetrieveUpdateAPIView):
+    serializer_class = UserProfileSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user
