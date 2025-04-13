@@ -2,6 +2,7 @@ import os
 from dotenv import find_dotenv, load_dotenv
 from pathlib import Path
 
+DEBUG = True
 
 dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
 load_dotenv(find_dotenv(), override=True)
@@ -15,12 +16,16 @@ MEDIA_ROOT = PROJECT_PATH / "media"
 STATIC_URL = "/static/"
 STATIC_ROOT = PROJECT_PATH / "staticfiles"
 
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]
+
 ENV = os.environ
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = ENV.get("SECRET_KEY")
 
-ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "localhost").split(",")
+ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 
 # Application definition
 INSTALLED_APPS = [
@@ -114,3 +119,5 @@ REDIS_BLACKLIST_EXPIRY_SECONDS = int(
 
 TIME_ZONE = "Asia/Kolkata"
 JWT_EXPIRY_DAY = int(ENV.get("JWT_EXPIRY_DAY", 20))
+
+AUTH_USER_MODEL = "users.Users"

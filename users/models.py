@@ -1,21 +1,49 @@
 from django.db import models
+from django.contrib.auth.models import (
+    AbstractBaseUser,
+    PermissionsMixin,
+    BaseUserManager,
+)
 
 GENDER = [("M", "Male"), ("F", "Female"), ("O", "Other"), ("", "Not selected")]
 
 
-class Users(models.Model):
+class UserManager(BaseUserManager):
+    def create_user(self, email, password=None, **extra_fields):
+        if not email:
+            raise ValueError("Email is required")
+        email = self.normalize_email(email)
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, password=None, **extra_fields):
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+        return self.create_user(email, password, **extra_fields)
+
+
+class Users(AbstractBaseUser, PermissionsMixin):
     id = models.BigAutoField(primary_key=True)
     firstname = models.CharField(max_length=32)
     lastname = models.CharField(max_length=32)
-    email = models.CharField(max_length=96, unique=True)
-    telephone = models.CharField(max_length=32)
-    password = models.TextField()
+    email = models.EmailField(max_length=96, unique=True)
+    telephone = models.CharField(max_length=32, unique=True)
     birthdate = models.DateField(null=True, blank=True)
     gender = models.CharField(choices=GENDER, max_length=2, null=True, blank=True)
     is_block = models.BooleanField(default=False)
     user_type = models.CharField(max_length=255)
+    is_staff = models.BooleanField(default=False)  # Required for admin login
+    is_active = models.BooleanField(default=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = ["firstname", "lastname", "telephone"]
+
+    objects = UserManager()
 
     class Meta:
         db_table = "users"
@@ -23,10 +51,6 @@ class Users(models.Model):
 
     def __str__(self):
         return self.firstname + " " + self.lastname
-
-    @property
-    def is_authenticated(self):
-        return True
 
 
 class UserTokenLog(models.Model):
@@ -48,3 +72,19 @@ class UserTokenLog(models.Model):
 
     def __str__(self):
         return f"Token Log for User {self.user_id}"
+
+
+class UserManager(BaseUserManager):
+    def create_user(self, email, password=None, **extra_fields):
+        if not email:
+            raise ValueError("Email is required")
+        email = self.normalize_email(email)
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, password=None, **extra_fields):
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+        return self.create_user(email, password, **extra_fields)

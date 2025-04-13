@@ -2,3 +2,4 @@ venv/
 .env
 *.pyc
 django_cache/
+staticfiles

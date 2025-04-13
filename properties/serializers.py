@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import PropertyImage, Property, Amenity
+from .models import PropertyImage, Property, Amenity, Favorite
 
 
 class PropertyImageSerializer(serializers.ModelSerializer):
@@ -47,3 +47,11 @@ class PropertySerializer(serializers.ModelSerializer):
                 instance.amenities.add(amenity)
 
         return instance
+
+
+class FavoriteSerializer(serializers.ModelSerializer):
+    property = PropertySerializer(read_only=True)
+
+    class Meta:
+        model = Favorite
+        fields = ["id", "property", "created_at"]

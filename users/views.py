@@ -1,6 +1,7 @@
 import random
 from rest_framework.views import APIView
 from django.db import transaction, IntegrityError
+from django.core.cache import cache
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from django.contrib.auth.hashers import make_password, check_password
