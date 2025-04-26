@@ -8,45 +8,55 @@ from properties.serializers import PropertySerializer
 
 class AdvancedPropertySearchView(APIView):
     def get(self, request):
-        query = Property.objects.prefetch_related("amenities").all()
-        params = request.query_params
+        qs = Property.objects.all()
 
-        # filters same as discussed
-        title = params.get("title")
-        city = params.get("city")
-        state = params.get("state")
-        country = params.get("country")
-        price_min = params.get("price_min")
-        price_max = params.get("price_max")
-        area_min = params.get("area_min")
-        area_max = params.get("area_max")
-        bedrooms = params.get("bedrooms")
-        bathrooms = params.get("bathrooms")
-        amenities = params.getlist("amenities")
+        location = request.GET.get("location")
+        category = request.GET.get("category")
+        type_ = request.GET.get("type")
+        bedrooms = request.GET.get("bedrooms")
+        mini_price = request.GET.get("mini_price")
+        max_price = request.GET.get("max_price")
+        furnished = request.GET.get("furnished")
+        serviced = request.GET.get("serviced")
+        keyword = request.GET.get("keyword")
 
-        if title:
-            query = query.filter(Q(title__icontains=title) | Q(description__icontains=title))
-        if city:
-            query = query.filter(city__iexact=city)
-        if state:
-            query = query.filter(state__iexact=state)
-        if country:
-            query = query.filter(country__iexact=country)
-        if price_min:
-            query = query.filter(price__gte=price_min)
-        if price_max:
-            query = query.filter(price__lte=price_max)
-        if area_min:
-            query = query.filter(area_sqft__gte=area_min)
-        if area_max:
-            query = query.filter(area_sqft__lte=area_max)
+        if location:
+            qs = qs.filter(location__icontains=location)
+
+        if category:
+            qs = qs.filter(category=category)
+
+        if type_:
+            qs = qs.filter(type=type_)
+
         if bedrooms:
-            query = query.filter(bedrooms=bedrooms)
-        if bathrooms:
-            query = query.filter(bathrooms=bathrooms)
-        if amenities:
-            for amenity in amenities:
-                query = query.filter(amenities__name__iexact=amenity)
+            qs = qs.filter(bedrooms__gte=int(bedrooms))
 
-        serializer = PropertySerializer(query.distinct(), many=True)
+        if mini_price:
+            qs = qs.filter(mini_price__gte=float(mini_price))
+
+        if max_price:
+            qs = qs.filter(max_price__lte=float(max_price))
+
+        if furnished is not None:
+            if furnished.lower() == "true":
+                qs = qs.filter(furnished=True)
+            elif furnished.lower() == "false":
+                qs = qs.filter(furnished=False)
+
+        if serviced is not None:
+            if serviced.lower() == "true":
+                qs = qs.filter(serviced=True)
+            elif serviced.lower() == "false":
+                qs = qs.filter(serviced=False)
+
+        if keyword:
+            qs = qs.filter(
+                Q(title__icontains=keyword)
+                | Q(description__icontains=keyword)
+                | Q(keyword_tags__icontains=keyword)
+            )
+
+        # ✅ FIX HERE:
+        serializer = PropertySerializer(qs, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)

@@ -11,18 +11,53 @@ class Amenity(models.Model):
 
 
 class Property(models.Model):
+    CATEGORY_CHOICES = [
+        ("sale", "Sale"),
+        ("rent", "Rent"),
+        ("short_let", "Short Let"),
+        ("jv", "Joint Venture"),
+        ("rent_to_own", "Rent to Own"),
+        ("monthly_rent", "Monthly Rent"),
+    ]
+
+    TYPE_CHOICES = [
+        ("flat_apartment", "Flat/Apartment"),
+        ("terrace", "Terrace"),
+        ("detached_house", "Detached House"),
+        ("land", "Land"),
+        ("joint_venture", "Joint Venture"),
+        ("office_space", "Office Space"),
+        ("hotel", "Hotel"),
+        ("warehouse", "Warehouse"),
+        ("shop", "Shop"),
+        ("commercial_property", "Commercial Property"),
+    ]
+
     title = models.CharField(max_length=255)
     description = models.TextField()
-    price = models.DecimalField(max_digits=12, decimal_places=2)
     location = models.CharField(max_length=255)
     city = models.CharField(max_length=100)
     state = models.CharField(max_length=100)
     country = models.CharField(max_length=100)
     area_sqft = models.DecimalField(max_digits=10, decimal_places=2)
-    bedrooms = models.IntegerField()
-    bathrooms = models.IntegerField()
+
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='sale')
+    type = models.CharField(max_length=30, choices=TYPE_CHOICES, default='flat_apartment')
+
+    bedrooms = models.IntegerField(default=0)
+    bathrooms = models.IntegerField(blank=True, null=True, default=0)
+
+    mini_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    max_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
+    furnished = models.BooleanField(default=False)
+    serviced = models.BooleanField(default=False)
+
+    keyword_tags = models.JSONField(default=list, blank=True)
+
     amenities = models.ManyToManyField(Amenity, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = "properties"
