@@ -55,7 +55,7 @@ ROOT_URLCONF = "raininfotech.urls"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.mysql",
+        "ENGINE": ENV.get("ENGINE"),
         "NAME": ENV.get("NAME"),
         "USER": ENV.get("USER"),
         "PASSWORD": ENV.get("PASSWORD"),
