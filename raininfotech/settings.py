@@ -2,7 +2,7 @@ import os
 from dotenv import find_dotenv, load_dotenv
 from pathlib import Path
 
-DEBUG = True
+DEBUG = False
 
 dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
 load_dotenv(find_dotenv(), override=True)
@@ -16,14 +16,16 @@ MEDIA_ROOT = PROJECT_PATH / "media"
 STATIC_URL = "/static/"
 STATIC_ROOT = PROJECT_PATH / "staticfiles"
 
-STATICFILES_DIRS = [
-    BASE_DIR / "static",
-]
+# STATICFILES_DIRS = [
+#     BASE_DIR / "static",
+# ]
 
 ENV = os.environ
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = ENV.get("SECRET_KEY")
+# SECRET_KEY = ENV.get("SECRET_KEY")
+
+SECRET_KEY = '_nn)2!$6(5$)vl&h-3gc!2m59m!$buw!3*a91(mt)9&97-0934'
 
 ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 
@@ -39,9 +41,11 @@ INSTALLED_APPS = [
     "users",
     "properties",
     "search",
+    "corsheaders",
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -63,6 +67,13 @@ DATABASES = {
         "PORT": ENV.get("PORT"),
     }
 }
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
 
 TEMPLATES = [
     {
@@ -121,3 +132,13 @@ TIME_ZONE = "Asia/Kolkata"
 JWT_EXPIRY_DAY = int(ENV.get("JWT_EXPIRY_DAY", 20))
 
 AUTH_USER_MODEL = "users.Users"
+
+# Add CORS configuration
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",  # React dev server
+    "http://127.0.0.1:3000",
+    # Add your frontend URLs
+]
+
+# Or for development, you can use:
+CORS_ALLOW_ALL_ORIGINS = True  # Only for development!
