@@ -137,7 +137,7 @@ AUTH_USER_MODEL = "users.Users"
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",  # React dev server
     "http://127.0.0.1:3000",
-    "https://knockes.vercel.com",
+    "https://knockes.vercel.app",
     # Add your frontend URLs
 ]
 
