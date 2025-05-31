@@ -27,7 +27,7 @@ ENV = os.environ
 
 SECRET_KEY = '_nn)2!$6(5$)vl&h-3gc!2m59m!$buw!3*a91(mt)9&97-0934'
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+ALLOWED_HOSTS = ["localhost", "127.0.0.1","api.knockes.com", "51.21.158.139"]
 
 # Application definition
 INSTALLED_APPS = [
