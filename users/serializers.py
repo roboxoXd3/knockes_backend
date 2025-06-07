@@ -14,6 +14,7 @@ class UserSerializer(serializers.ModelSerializer):
             "password",
             "birthdate",
             "gender",
+            "is_staff",
             "is_block",
             "created_at",
             "updated_at",
