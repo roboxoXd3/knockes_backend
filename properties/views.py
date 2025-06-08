@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .models import Property, Favorite
 from .serializers import FavoriteSerializer, PropertySerializer
+from rest_framework.exceptions import PermissionDenied
 
 
 class PropertyListCreateView(generics.ListCreateAPIView):
@@ -18,6 +19,16 @@ class PropertyListCreateView(generics.ListCreateAPIView):
         if self.request.method == "POST":
             return [permissions.IsAuthenticated()]
         return [permissions.AllowAny()]
+
+    def perform_create(self, serializer):
+        user = self.request.user
+
+        if user.user_type != "owner":
+            raise PermissionDenied(
+                "Only users with 'owner' user_type can create properties."
+            )
+
+        serializer.save(owner=user)
 
 
 class PropertyRetrieveUpdateView(generics.RetrieveUpdateAPIView):

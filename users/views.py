@@ -34,6 +34,7 @@ class RegisterUserView(APIView):
     def post(self, request):
         req_data = request.data
 
+        # Required fields validation
         if (
             not req_data.get("email")
             or not req_data.get("telephone")
@@ -41,6 +42,15 @@ class RegisterUserView(APIView):
         ):
             return Response(
                 {"error": "Email, telephone, and password are required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Default user_type to 'agent' and validate
+        allowed_user_types = ["agent", "owner", "buyer"]
+        req_data["user_type"] = req_data.get("user_type", "agent")
+        if req_data["user_type"] not in allowed_user_types:
+            return Response(
+                {"error": f"user_type must be one of {allowed_user_types}."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -62,13 +72,30 @@ class RegisterUserView(APIView):
             if serializer.is_valid():
                 with transaction.atomic():
                     user = serializer.save()
-                    token = create_token(user)
+                    token_data = create_token(
+                        user
+                    )  # should return both access and refresh
+
+                    subscription_status = (
+                        "inactive" if user.user_type in ["agent", "owner"] else None
+                    )
+
                     return Response(
                         {
-                            "message": "User registered successfully",
-                            "username": f"{user.firstname} {user.lastname}",
-                            "user_id": user.id,
-                            "token": token,
+                            "success": True,
+                            "data": {
+                                "user": {
+                                    "id": user.id,
+                                    "email": user.email,
+                                    "user_type": user.user_type,
+                                    "subscription_status": subscription_status,
+                                    "email_verified": False,
+                                },
+                                "tokens": {
+                                    "access": token_data.get("access"),
+                                    "refresh": token_data.get("refresh"),
+                                },
+                            },
                         },
                         status=status.HTTP_201_CREATED,
                     )
@@ -172,13 +199,24 @@ class UserLoginView(APIView):
                     status=status.HTTP_401_UNAUTHORIZED,
                 )
 
-            token = create_token(user)
+            token_data = create_token(user)
+
             return Response(
                 {
-                    "token": token,
-                    "user_id": user.id,
-                    "email": user.email,
-                    "msg": "Login successful",
+                    "success": True,
+                    "data": {
+                        "user": {
+                            "id": user.id,
+                            "email": user.email,
+                            "user_type": user.user_type,
+                            "subscription_status": "active" if user.user_type in ["agent", "owner"] else None,
+                            "profile_complete": bool(user.firstname and user.lastname and user.telephone),
+                        },
+                        "tokens": {
+                            "access": token_data.get("access"),
+                            "refresh": token_data.get("refresh"),
+                        },
+                    },
                 },
                 status=status.HTTP_200_OK,
             )
@@ -417,3 +455,15 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         return self.request.user
+
+    def get(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response({"success": True, "data": serializer.data})
+
+    def put(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({"success": True, "data": serializer.data})

@@ -14,19 +14,30 @@ def email_validation(email):
 
 
 def create_token(user):
-    payload = {
+    access_payload = {
         "sub": str(user.id),
+        "type": "access",
         "iat": datetime.now(timezone.utc),
-        "exp": datetime.now(timezone.utc) + timedelta(days=settings.JWT_EXPIRY_DAY),
+        "exp": datetime.now(timezone.utc) + timedelta(minutes=15),  # Short-lived access token
     }
 
-    decodedJwt = "2f." + encodeJwt(payload)
+    refresh_payload = {
+        "sub": str(user.id),
+        "type": "refresh",
+        "iat": datetime.now(timezone.utc),
+        "exp": datetime.now(timezone.utc) + timedelta(days=settings.JWT_EXPIRY_DAY),  # Long-lived refresh token
+    }
 
-    # User login logs
-    user_token_log(user.id, decodedJwt)
+    access_token = "2f." + encodeJwt(access_payload)
+    refresh_token = "2f." + encodeJwt(refresh_payload)
 
-    encodedJwt = decodedJwt
-    return encodedJwt
+    # Log token generation
+    user_token_log(user.id, access_token)
+
+    return {
+        "access": access_token,
+        "refresh": refresh_token,
+    }
 
 
 def encodeJwt(payload):

@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from users.models import Users
 
 
 class Amenity(models.Model):
@@ -58,6 +59,18 @@ class Property(models.Model):
     amenities = models.ManyToManyField(Amenity, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    owner = models.ForeignKey(Users, on_delete=models.CASCADE, related_name="properties")
+
+    boosted_until = models.DateTimeField(null=True, blank=True)
+    featured_until = models.DateTimeField(null=True, blank=True)
+    boost_rank = models.IntegerField(default=0)
+
+    latitude = models.DecimalField(
+        max_digits=9, decimal_places=6, null=True, blank=True
+    )
+    longitude = models.DecimalField(
+        max_digits=9, decimal_places=6, null=True, blank=True
+    )
 
     class Meta:
         db_table = "properties"
