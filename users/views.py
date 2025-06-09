@@ -1,4 +1,5 @@
 import random
+from django.db.models import Avg, Count
 from rest_framework.views import APIView
 from django.db import transaction, IntegrityError
 from django.core.cache import cache
@@ -7,9 +8,9 @@ from rest_framework.response import Response
 from django.contrib.auth.hashers import make_password, check_password
 from rest_framework import status, generics, permissions
 from raininfotech.helper import create_token, email_validation, cache_set
-from .serializers import UserSerializer, UserProfileSerializer
+from .serializers import UserSerializer, UserProfileSerializer, OwnerReviewSerializer
 import traceback
-from users.models import Users, UserTokenLog
+from users.models import Users, UserTokenLog, OwnerReview
 from users.utils import (
     data_sanitization,
     phone_no_validation,
@@ -467,3 +468,47 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response({"success": True, "data": serializer.data})
+
+
+class OwnerReviewCreateView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, owner_id):
+        serializer = OwnerReviewSerializer(
+            data=request.data, context={"request": request, "view": self}
+        )
+        serializer.is_valid(raise_exception=True)
+        review = serializer.save()
+        return Response(
+            {"success": True, "message": "Review submitted", "data": serializer.data}
+        )
+
+
+class OwnerReviewListView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, owner_id):
+        reviews = OwnerReview.objects.filter(owner_id=owner_id).order_by("-created_at")
+        stats = reviews.aggregate(avg=Avg("rating"), count=Count("id"))
+        serializer = OwnerReviewSerializer(reviews, many=True)
+
+        formatted_reviews = [
+            {
+                "id": i + 1,
+                "user": item["reviewer"],
+                "rating": item["rating"],
+                "comment": item["comment"],
+                "date": item["created_at"],
+            }
+            for i, item in enumerate(serializer.data)
+        ]
+
+        return Response(
+            {
+                "reviews": {
+                    "total_reviews": stats["count"],
+                    "average_rating": round(stats["avg"] or 0, 1),
+                    "reviews_list": formatted_reviews,
+                }
+            }
+        )

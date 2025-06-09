@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import PropertyImage, Property, Amenity, Favorite
+from .models import PropertyImage, Property, Amenity, Favorite, PropertyReview
 
 
 class PropertyImageSerializer(serializers.ModelSerializer):
@@ -148,3 +148,49 @@ class FavoriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Favorite
         fields = ["id", "property", "created_at"]
+
+
+class PropertyReviewSerializer(serializers.ModelSerializer):
+    user = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PropertyReview
+        fields = ["id", "user", "rating", "comment", "created_at"]
+        read_only_fields = ["id", "user", "created_at"]
+
+    def get_user(self, obj):
+        return {
+            "id": obj.user.id,
+            "name": f"{obj.user.firstname} {obj.user.lastname}",
+            "avatar": (
+                obj.user.avatar.url
+                if hasattr(obj.user, "avatar") and obj.user.avatar
+                else None
+            ),
+        }
+
+    def create(self, validated_data):
+        request = self.context["request"]
+        user = request.user
+        property_id = self.context["view"].kwargs.get("property_id")
+
+        # Check for existing review
+        existing_review = PropertyReview.objects.filter(
+            user=user, property_id=property_id
+        ).first()
+
+        if existing_review:
+            # Update the existing review
+            existing_review.rating = validated_data.get(
+                "rating", existing_review.rating
+            )
+            existing_review.comment = validated_data.get(
+                "comment", existing_review.comment
+            )
+            existing_review.save()
+            return existing_review
+
+        # Create new review
+        return PropertyReview.objects.create(
+            user=user, property_id=property_id, **validated_data
+        )

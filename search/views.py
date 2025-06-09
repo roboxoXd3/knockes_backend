@@ -1,12 +1,15 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, permissions
 from django.db.models import Q
 from properties.models import Property
 from properties.serializers import PropertySerializer
 
 
 class AdvancedPropertySearchView(APIView):
+    def get_permissions(self):
+        return [permissions.AllowAny()]
+
     def get(self, request):
         qs = Property.objects.all()
 
@@ -57,6 +60,5 @@ class AdvancedPropertySearchView(APIView):
                 | Q(keyword_tags__icontains=keyword)
             )
 
-        # ✅ FIX HERE:
         serializer = PropertySerializer(qs, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)

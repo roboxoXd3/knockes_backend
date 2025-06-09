@@ -101,3 +101,15 @@ class Favorite(models.Model):
     class Meta:
         unique_together = ("user", "property")
         db_table = "favorites"
+
+
+class PropertyReview(models.Model):
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="reviews")
+    user = models.ForeignKey(Users, on_delete=models.CASCADE, related_name="reviews")
+    rating = models.PositiveSmallIntegerField()  # 1 to 5
+    comment = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("property", "user")  # One review per user per property
+        ordering = ["-created_at"]

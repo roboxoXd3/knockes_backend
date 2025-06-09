@@ -1,10 +1,11 @@
+from django.db.models import Avg
 from rest_framework import generics, filters, status, permissions
 from properties.permissions import ReadOnlyOrAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from .models import Property, Favorite
-from .serializers import FavoriteSerializer, PropertySerializer
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from .models import Property, Favorite, PropertyReview
+from .serializers import FavoriteSerializer, PropertySerializer, PropertyReviewSerializer
 from rest_framework.exceptions import PermissionDenied
 
 
@@ -97,3 +98,49 @@ class PropertyCompareView(APIView):
         properties = Property.objects.filter(id__in=ids)
         serializer = PropertySerializer(properties, many=True)
         return Response(serializer.data)
+
+
+class PropertyReviewCreateView(generics.CreateAPIView):
+    queryset = PropertyReview.objects.all()
+    serializer_class = PropertyReviewSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user, property_id=self.kwargs.get("property_id"))
+
+
+class PropertyReviewListView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, property_id):
+        reviews = PropertyReview.objects.filter(property_id=property_id).order_by(
+            "-created_at"
+        )
+        total_reviews = reviews.count()
+        avg_rating = reviews.aggregate(avg=Avg("rating"))["avg"] or 0.0
+
+        serializer = PropertyReviewSerializer(reviews, many=True)
+
+        formatted_reviews = [
+            {
+                "id": index + 1,  # serial number
+                "user": {
+                    "name": item["user"]["name"],
+                    "avatar": item["user"]["avatar"],
+                },
+                "rating": item["rating"],
+                "comment": item["comment"],
+                "date": item["created_at"],
+            }
+            for index, item in enumerate(serializer.data)
+        ]
+
+        return Response(
+            {
+                "reviews": {
+                    "total_reviews": total_reviews,
+                    "average_rating": round(avg_rating, 1),
+                    "reviews_list": formatted_reviews,
+                }
+            }
+        )

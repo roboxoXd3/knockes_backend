@@ -8,6 +8,8 @@ from .views import (
     LogoutUserView,
     PasswordResetView,
     UserProfileView,
+    OwnerReviewListView,
+    OwnerReviewCreateView,
 )
 
 router = DefaultRouter()
@@ -21,4 +23,6 @@ urlpatterns = [
     path("auth/logout/", LogoutUserView.as_view(), name="logout"),
     path("auth/password-reset/", PasswordResetView.as_view(), name="password_reset"),
     path("users/profile/", UserProfileView.as_view(), name="user-profile"),
+    path("owners/<int:owner_id>/reviews/", OwnerReviewListView.as_view(), name="owner-review-list"),
+    path("owners/<int:owner_id>/reviews/add/", OwnerReviewCreateView.as_view(), name="owner-review-create"),
 ]

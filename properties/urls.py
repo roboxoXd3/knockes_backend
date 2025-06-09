@@ -6,6 +6,8 @@ from .views import (
     AddRemoveFavoriteView,
     UserFavoritesListView,
     PropertyCompareView,
+    PropertyReviewCreateView,
+    PropertyReviewListView,
 )
 
 urlpatterns = [
@@ -16,5 +18,6 @@ urlpatterns = [
     path("properties/<int:id>/favorite/", AddRemoveFavoriteView.as_view(), name="add-remove-favorite"),
     path("users/favorites/", UserFavoritesListView.as_view(), name="user-favorites"),
     path("properties/compare/", PropertyCompareView.as_view(), name="property-compare"),
-    # create an api to fetch list of all the property types.
+    path("properties/<int:property_id>/reviews/", PropertyReviewListView.as_view(), name="property-review-list"),
+    path("properties/<int:property_id>/reviews/add/", PropertyReviewCreateView.as_view(), name="property-review-create"),
 ]

@@ -39,6 +39,16 @@ class Users(AbstractBaseUser, PermissionsMixin):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    rating = models.FloatField(default=0.0)
+    review_count = models.PositiveIntegerField(default=0)
+
+    whatsapp = models.CharField(max_length=32, null=True, blank=True)
+
+    linkedin = models.URLField(null=True, blank=True)
+    facebook = models.URLField(null=True, blank=True)
+    instagram = models.URLField(null=True, blank=True)
+    youtube = models.URLField(null=True, blank=True)
+    twitter = models.URLField(null=True, blank=True)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["firstname", "lastname", "telephone"]
@@ -88,3 +98,20 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
         return self.create_user(email, password, **extra_fields)
+
+
+class OwnerReview(models.Model):
+    id = models.BigAutoField(primary_key=True)  # ✅ Add this line
+    owner = models.ForeignKey(
+        Users, on_delete=models.CASCADE, related_name="owner_reviews"
+    )
+    reviewer = models.ForeignKey(
+        Users, on_delete=models.CASCADE, related_name="given_owner_reviews"
+    )
+    rating = models.PositiveSmallIntegerField()
+    comment = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("owner", "reviewer")
+        ordering = ["-created_at"]
