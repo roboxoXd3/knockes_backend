@@ -29,6 +29,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
     profile_completion = serializers.SerializerMethodField()
     verification_status = serializers.SerializerMethodField()
     social_links = serializers.SerializerMethodField()
+    reviews = serializers.SerializerMethodField()
 
     class Meta:
         model = Users
@@ -96,6 +97,9 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "youtube": obj.youtube,
             "twitter": obj.twitter,
         }
+
+    def get_reviews(self, obj):
+        return obj.owner_reviews.count()
 
 
 class OwnerReviewSerializer(serializers.ModelSerializer):

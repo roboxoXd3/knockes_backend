@@ -33,7 +33,7 @@ class PropertyListCreateView(generics.ListCreateAPIView):
 
 
 class PropertyRetrieveUpdateView(generics.RetrieveUpdateAPIView):
-    queryset = Property.objects.all()
+    queryset = Property.objects.all().prefetch_related("images", "amenities")
     serializer_class = PropertySerializer
     permission_classes = [ReadOnlyOrAuthenticated]
     lookup_field = "id"

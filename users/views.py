@@ -210,7 +210,7 @@ class UserLoginView(APIView):
                             "id": user.id,
                             "email": user.email,
                             "user_type": user.user_type,
-                            "subscription_status": "active" if user.user_type in ["agent", "owner"] else None,
+                            "subscription_status": "active" if user.user_type in ["agent", "owner"] else "buyer",
                             "profile_complete": bool(user.firstname and user.lastname and user.telephone),
                         },
                         "tokens": {
@@ -507,7 +507,7 @@ class OwnerReviewListView(APIView):
             {
                 "reviews": {
                     "total_reviews": stats["count"],
-                    "average_rating": round(stats["avg"] or 0, 1),
+                    "average_rating": stats["avg"],  # ❌ Do not round
                     "reviews_list": formatted_reviews,
                 }
             }

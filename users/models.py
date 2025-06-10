@@ -50,6 +50,8 @@ class Users(AbstractBaseUser, PermissionsMixin):
     youtube = models.URLField(null=True, blank=True)
     twitter = models.URLField(null=True, blank=True)
 
+    avatar = models.ImageField(upload_to="avatars/", null=True, blank=True)
+
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["firstname", "lastname", "telephone"]
 

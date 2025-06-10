@@ -1,5 +1,8 @@
+from django.utils import timezone
+from django.db.models import Avg, Count
 from rest_framework import serializers
 from .models import PropertyImage, Property, Amenity, Favorite, PropertyReview
+from users.models import OwnerReview
 
 
 class PropertyImageSerializer(serializers.ModelSerializer):
@@ -9,20 +12,15 @@ class PropertyImageSerializer(serializers.ModelSerializer):
 
 
 class PropertySerializer(serializers.ModelSerializer):
-    # Output fields
     images = serializers.SerializerMethodField()
     amenities_display = serializers.SerializerMethodField()
     owner = serializers.SerializerMethodField()
     is_boosted = serializers.SerializerMethodField()
-    boosted_until = serializers.DateTimeField(read_only=True)
     is_featured = serializers.SerializerMethodField()
-    featured_until = serializers.DateTimeField(read_only=True)
-    boost_rank = serializers.IntegerField(read_only=True)
-
-    # Input-only field
-    amenities = serializers.ListField(
-        child=serializers.CharField(), write_only=True, required=False
-    )
+    reviews = serializers.SerializerMethodField()
+    location_details = serializers.SerializerMethodField()
+    price = serializers.SerializerMethodField()
+    area = serializers.SerializerMethodField()
 
     class Meta:
         model = Property
@@ -55,6 +53,10 @@ class PropertySerializer(serializers.ModelSerializer):
             "is_featured",
             "featured_until",
             "boost_rank",
+            "reviews",
+            "location_details",
+            "price",
+            "area",
         ]
         read_only_fields = ["id", "created_at", "updated_at", "owner"]
 
@@ -65,12 +67,49 @@ class PropertySerializer(serializers.ModelSerializer):
         return [a.name for a in obj.amenities.all()]
 
     def get_owner(self, obj):
-        if obj.owner:
-            return {
-                "id": obj.owner.id,
-                "name": f"{obj.owner.firstname} {obj.owner.lastname}",
-            }
-        return None
+        u = obj.owner
+        review_stats = OwnerReview.objects.filter(owner=u).aggregate(
+            avg_rating=Avg("rating"), total_reviews=Count("id")
+        )
+        return {
+            "id": u.id,
+            "name": f"{u.firstname} {u.lastname}",
+            "phone": u.telephone,
+            "email": u.email,
+            "user_type": u.user_type,
+            "avatar": getattr(u, "avatar", "https://example.com/avatar.jpg")
+            or "https://example.com/avatar.jpg",
+            "rating": float(review_stats["avg_rating"] or 0),
+            "reviews": review_stats["total_reviews"],
+            "whatsapp": getattr(u, "whatsapp", None),
+            "social_links": {
+                "linkedin": getattr(u, "linkedin", ""),
+                "facebook": getattr(u, "facebook", ""),
+                "instagram": getattr(u, "instagram", ""),
+                "youtube": getattr(u, "youtube", ""),
+                "twitter": getattr(u, "twitter", ""),
+            },
+        }
+
+    def get_reviews(self, obj):
+        reviews = PropertyReview.objects.filter(property=obj).order_by("-created_at")
+        return {
+            "total_reviews": reviews.count(),
+            "average_rating": round(reviews.aggregate(avg=Avg("rating"))["avg"] or 0, 1),
+            "reviews_list": [
+                {
+                    "id": i + 1,
+                    "user": {
+                        "name": f"{r.user.firstname} {r.user.lastname}",
+                        "avatar": r.user.avatar.url if r.user.avatar else "https://example.com/avatar.jpg"
+                    },
+                    "rating": r.rating,
+                    "comment": r.comment,
+                    "date": r.created_at
+                }
+                for i, r in enumerate(reviews)
+            ]
+        }
 
     def get_is_boosted(self, obj):
         return bool(obj.boosted_until and obj.boosted_until > timezone.now())
@@ -78,46 +117,18 @@ class PropertySerializer(serializers.ModelSerializer):
     def get_is_featured(self, obj):
         return bool(obj.featured_until and obj.featured_until > timezone.now())
 
-    def get_boost_rank(self, obj):
-        return obj.boost_rank if hasattr(obj, "boost_rank") else 0
-
-    def get_images(self, obj):
-        return [img.image.url if img.image else "" for img in obj.images.all()]
-
-    def get_amenities(self, obj):
-        return [a.name for a in obj.amenities.all()]
-
-    def get_owner(self, obj):
-        u = obj.owner
-        return {
-            "id": u.id,
-            "name": f"{u.firstname} {u.lastname}",
-            "phone": u.telephone,
-            "email": u.email,
-            "user_type": u.user_type,
-            "avatar": (
-                u.avatar.url if hasattr(u, "avatar") and u.avatar else "avatar.jpg"
-            ),
-        }
-
     def get_location_details(self, obj):
         return {
             "address": obj.location,
-            "latitude": None,  # Add latitude/longitude in model later if needed
-            "longitude": None,
+            "latitude": getattr(obj, "latitude", None),
+            "longitude": getattr(obj, "longitude", None),
         }
 
-    def get_property_type(self, obj):
-        return obj.type
-
-    def get_listing_type(self, obj):
-        return obj.category
-
     def get_price(self, obj):
-        return float(obj.max_price or obj.mini_price)
+        return float(obj.max_price or obj.mini_price or 0)
 
     def get_area(self, obj):
-        return f"{obj.area_sqft} sq ft"
+        return f"{obj.area_sqft:,} sqft" if obj.area_sqft else None
 
     def create(self, validated_data):
         amenities_data = validated_data.pop("amenities", [])
