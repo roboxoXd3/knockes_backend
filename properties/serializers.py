@@ -19,8 +19,9 @@ class PropertySerializer(serializers.ModelSerializer):
     is_featured = serializers.SerializerMethodField()
     reviews = serializers.SerializerMethodField()
     location_details = serializers.SerializerMethodField()
-    price = serializers.SerializerMethodField()
+    price = serializers.FloatField(source="max_price")
     area = serializers.SerializerMethodField()
+    address = serializers.SerializerMethodField()
 
     class Meta:
         model = Property
@@ -28,23 +29,25 @@ class PropertySerializer(serializers.ModelSerializer):
             "id",
             "title",
             "description",
+            "price",  # read-only output
+            "price_input",  # write-only input
+            "address",
             "location",
+            "images",
+            "bedrooms",
+            "bathrooms",
+            "area",
+            "type",
             "city",
             "state",
             "country",
             "area_sqft",
             "category",
-            "type",
-            "bedrooms",
-            "bathrooms",
-            "mini_price",
-            "max_price",
             "furnished",
             "serviced",
             "keyword_tags",
             "created_at",
             "updated_at",
-            "images",
             "amenities",
             "amenities_display",
             "owner",
@@ -55,8 +58,6 @@ class PropertySerializer(serializers.ModelSerializer):
             "boost_rank",
             "reviews",
             "location_details",
-            "price",
-            "area",
         ]
         read_only_fields = ["id", "created_at", "updated_at", "owner"]
 
@@ -77,11 +78,14 @@ class PropertySerializer(serializers.ModelSerializer):
             "phone": u.telephone,
             "email": u.email,
             "user_type": u.user_type,
-            "avatar": getattr(u, "avatar", "https://example.com/avatar.jpg")
-            or "https://example.com/avatar.jpg",
+            "avatar": (
+                u.avatar.url
+                if hasattr(u, "avatar") and u.avatar
+                else "https://example.com/avatar.jpg"
+            ),
             "rating": float(review_stats["avg_rating"] or 0),
             "reviews": review_stats["total_reviews"],
-            "whatsapp": getattr(u, "whatsapp", None),
+            "whatsapp": getattr(u, "whatsapp", ""),
             "social_links": {
                 "linkedin": getattr(u, "linkedin", ""),
                 "facebook": getattr(u, "facebook", ""),
@@ -95,21 +99,30 @@ class PropertySerializer(serializers.ModelSerializer):
         reviews = PropertyReview.objects.filter(property=obj).order_by("-created_at")
         return {
             "total_reviews": reviews.count(),
-            "average_rating": round(reviews.aggregate(avg=Avg("rating"))["avg"] or 0, 1),
+            "average_rating": round(
+                reviews.aggregate(avg=Avg("rating"))["avg"] or 0, 1
+            ),
             "reviews_list": [
                 {
                     "id": i + 1,
                     "user": {
                         "name": f"{r.user.firstname} {r.user.lastname}",
-                        "avatar": r.user.avatar.url if r.user.avatar else "https://example.com/avatar.jpg"
+                        "avatar": (
+                            r.user.avatar.url
+                            if r.user.avatar
+                            else "https://example.com/avatar.jpg"
+                        ),
                     },
                     "rating": r.rating,
                     "comment": r.comment,
-                    "date": r.created_at
+                    "date": r.created_at,
                 }
                 for i, r in enumerate(reviews)
-            ]
+            ],
         }
+
+    def get_address(self, obj):
+        return obj.location
 
     def get_is_boosted(self, obj):
         return bool(obj.boosted_until and obj.boosted_until > timezone.now())
@@ -119,19 +132,22 @@ class PropertySerializer(serializers.ModelSerializer):
 
     def get_location_details(self, obj):
         return {
-            "address": obj.location,
             "latitude": getattr(obj, "latitude", None),
             "longitude": getattr(obj, "longitude", None),
         }
 
-    def get_price(self, obj):
-        return float(obj.max_price or obj.mini_price or 0)
-
     def get_area(self, obj):
         return f"{obj.area_sqft:,} sqft" if obj.area_sqft else None
 
+    def get_price(self, obj):
+        return float(obj.max_price or 0)
+
     def create(self, validated_data):
         amenities_data = validated_data.pop("amenities", [])
+        price = validated_data.pop("price_input", None)
+        if price is not None:
+            validated_data["max_price"] = price
+
         property_instance = Property.objects.create(**validated_data)
         for name in amenities_data:
             amenity, _ = Amenity.objects.get_or_create(name=name)
@@ -140,6 +156,10 @@ class PropertySerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         amenities_data = validated_data.pop("amenities", None)
+        price = validated_data.pop("price_input", None)
+        if price is not None:
+            validated_data["max_price"] = price
+
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
