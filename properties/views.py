@@ -106,7 +106,7 @@ class PropertyReviewCreateView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user, property_id=self.kwargs.get("property_id"))
+        serializer.save()
 
 
 class PropertyReviewListView(APIView):

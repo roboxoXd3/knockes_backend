@@ -206,13 +206,15 @@ class PropertyReviewSerializer(serializers.ModelSerializer):
         user = request.user
         property_id = self.context["view"].kwargs.get("property_id")
 
+        # 🔄 Convert ID to instance
+        property_instance = Property.objects.get(id=property_id)
+
         # Check for existing review
         existing_review = PropertyReview.objects.filter(
-            user=user, property_id=property_id
+            user=user, property=property_instance
         ).first()
 
         if existing_review:
-            # Update the existing review
             existing_review.rating = validated_data.get(
                 "rating", existing_review.rating
             )
@@ -222,7 +224,6 @@ class PropertyReviewSerializer(serializers.ModelSerializer):
             existing_review.save()
             return existing_review
 
-        # Create new review
         return PropertyReview.objects.create(
-            user=user, property_id=property_id, **validated_data
+            user=user, property=property_instance, **validated_data
         )
