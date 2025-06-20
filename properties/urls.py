@@ -8,6 +8,7 @@ from .views import (
     PropertyCompareView,
     PropertyReviewCreateView,
     PropertyReviewListView,
+    PropertyTypeListView,
 )
 
 urlpatterns = [
@@ -20,4 +21,5 @@ urlpatterns = [
     path("properties/compare/", PropertyCompareView.as_view(), name="property-compare"),
     path("properties/<int:property_id>/reviews/", PropertyReviewListView.as_view(), name="property-review-list"),
     path("properties/<int:property_id>/reviews/add/", PropertyReviewCreateView.as_view(), name="property-review-create"),
+    path("properties/types/", PropertyTypeListView.as_view(), name="property-types"),
 ]

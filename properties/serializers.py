@@ -13,6 +13,9 @@ class PropertyImageSerializer(serializers.ModelSerializer):
 
 class PropertySerializer(serializers.ModelSerializer):
     price_input = serializers.FloatField(write_only=True, required=False)
+    amenities = serializers.ListField(
+        child=serializers.CharField(), write_only=True, required=False
+    )
     images = serializers.SerializerMethodField()
     amenities_display = serializers.SerializerMethodField()
     owner = serializers.SerializerMethodField()
