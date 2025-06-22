@@ -87,6 +87,9 @@ class UserFavoritesListView(generics.ListAPIView):
 
 
 class PropertyCompareView(APIView):
+    def get_permissions(self):
+        return [permissions.AllowAny()]
+
     def post(self, request):
         ids = request.data.get("property_ids", [])
         if not ids or not isinstance(ids, list):
@@ -97,7 +100,7 @@ class PropertyCompareView(APIView):
 
         properties = Property.objects.filter(id__in=ids)
         serializer = PropertySerializer(properties, many=True)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class PropertyReviewCreateView(generics.CreateAPIView):
@@ -144,3 +147,11 @@ class PropertyReviewListView(APIView):
                 }
             }
         )
+
+
+class PropertyTypeListView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        types = [{"value": key, "label": label} for key, label in Property.TYPE_CHOICES]
+        return Response(types, status=status.HTTP_200_OK)
