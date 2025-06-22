@@ -23,7 +23,7 @@ jobs:
           ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
             set -e
             echo "Setting variables..."
-            REPO_DIR="/home/ubuntu/new_code/knockes_backend-main"
+            REPO_DIR="/home/ubuntu/new_code/knockes_backend-feature-user-management-prod/knockes_backend-feature-user-management-prod"
             BRANCH="main"
             REPO_URL="https://github.com/roboxoXd3/knockes_backend.git"
 
